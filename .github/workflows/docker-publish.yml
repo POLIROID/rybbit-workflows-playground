@@ -85,10 +85,8 @@ jobs:
       - name: Export digests
         run: |
           mkdir -p /tmp/digests
-          backend_digest="${{ steps.build-backend.outputs.digest }}"
-          client_digest="${{ steps.build-client.outputs.digest }}"
-          touch "/tmp/digests/${backend_digest#sha256:}"
-          touch "/tmp/digests/${client_digest#sha256:}"
+          echo "${{ steps.build-backend.outputs.digest }}" > /tmp/digests/backend-${{ env.PLATFORM_PAIR }}
+          echo "${{ steps.build-client.outputs.digest }}" > /tmp/digests/client-${{ env.PLATFORM_PAIR }}
 
       - name: Upload digest
         uses: actions/upload-artifact@v4
@@ -108,6 +106,7 @@ jobs:
       - build  # Wait for all platforms to be built
 
     steps:
+
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
@@ -149,9 +148,14 @@ jobs:
         working-directory: /tmp/digests
         run: |
           for component in backend client; do
+            digests=""
+            for file in ${component}-*; do
+              digest=$(cat "$file")
+              digests+="ghcr.io/poliroid/rybbit-${component}@${digest} "
+            done
             docker buildx imagetools create \
               $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-              $(printf 'ghcr.io/poliroid/rybbit-%s@sha256:%s ' "$component" ${component}-*)
+              $digests
           done
 
       - name: Inspect images
