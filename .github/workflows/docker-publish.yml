@@ -64,7 +64,7 @@ jobs:
           file: ./server/Dockerfile
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,"name=poliroid/rybbit-backend",push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,"name=ghcr.io/poliroid/rybbit-backend",push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
         run: |
@@ -133,4 +133,4 @@ jobs:
 
       - name: Inspect image ghcr
         run: |
-            docker buildx imagetools inspect poliroid/rybbit-backend:${{ steps.meta.outputs.version }}
+            docker buildx imagetools inspect ghcr.io/poliroid/rybbit-backend:${{ steps.meta.outputs.version }}
