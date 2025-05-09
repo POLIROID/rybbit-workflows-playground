@@ -123,12 +123,11 @@ jobs:
             ${{ startsWith(github.ref, 'refs/tags/v') && 'type=raw,value=latest,priority=901' || '' }}
             
             # Add the version tag itself (e.g. v1.2.3)
-            ${{ startsWith(github.ref, 'refs/tags/v') && 'type=raw,value=${{ github.ref_name }},priority=900' || '' }}
+            ${{ startsWith(github.ref, 'refs/tags/v') && format('type=raw,value={0},priority=900', github.ref_name) || '' }}
             
             # Always add 'edge' tag for build on latest commit indicator
-            type=edge
-            
             # Always add short SHA tag for traceability
+            type=edge
             type=sha
 
       - name: Create manifest list and push gchr
