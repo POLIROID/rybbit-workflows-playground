@@ -126,8 +126,10 @@ jobs:
       - name: Create manifest list and push gchr
         working-directory: /tmp/digests
         run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf 'poliroid/rybbit-backend@sha256:%s ' *) 
+          docker buildx imagetools create \
+            -t ghcr.io/poliroid/rybbit-backend:${{ github.ref_name }} \
+            ghcr.io/poliroid/rybbit-backend:${{ github.ref_name }}-amd64 \
+            ghcr.io/poliroid/rybbit-backend:${{ github.ref_name }}-arm64
 
       - name: Inspect image ghcr
         run: |
