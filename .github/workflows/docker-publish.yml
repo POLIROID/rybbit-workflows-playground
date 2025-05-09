@@ -87,8 +87,8 @@ jobs:
           mkdir -p /tmp/digests
           backend_digest="${{ steps.build-backend.outputs.digest }}"
           client_digest="${{ steps.build-client.outputs.digest }}"
-          touch "/tmp/digests/backend-${backend_digest#sha256:}"
-          touch "/tmp/digests/client-${client_digest#sha256:}"
+          touch "/tmp/digests/${backend_digest#sha256:}"
+          touch "/tmp/digests/${client_digest#sha256:}"
 
       - name: Upload digest
         uses: actions/upload-artifact@v4
