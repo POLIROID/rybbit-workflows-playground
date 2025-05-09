@@ -64,7 +64,7 @@ jobs:
           file: ./server/Dockerfile
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,"name=ghcr.io/poliroid/rybbit-backend",push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,"name=ghcr.io/poliroid/rybbit-workflows-playground",push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
         run: |
@@ -127,10 +127,10 @@ jobs:
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create \
-            -t ghcr.io/poliroid/rybbit-backend:${{ github.ref_name }} \
-            ghcr.io/poliroid/rybbit-backend:${{ github.ref_name }}-amd64 \
-            ghcr.io/poliroid/rybbit-backend:${{ github.ref_name }}-arm64
+            -t ghcr.io/poliroid/rybbit-workflows-playground:${{ github.ref_name }} \
+            ghcr.io/poliroid/rybbit-workflows-playground:${{ github.ref_name }}-amd64 \
+            ghcr.io/poliroid/rybbit-workflows-playground:${{ github.ref_name }}-arm64
 
       - name: Inspect image ghcr
         run: |
-            docker buildx imagetools inspect ghcr.io/poliroid/rybbit-backend:${{ steps.meta.outputs.version }}
+            docker buildx imagetools inspect ghcr.io/poliroid/rybbit-workflows-playground:${{ steps.meta.outputs.version }}
