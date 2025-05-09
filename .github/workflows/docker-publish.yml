@@ -116,10 +116,14 @@ jobs:
           images: |
             ghcr.io/poliroid/rybbit-backend
           tags: |
-            type=raw,value=edge
-            type=raw,value=${{ github.ref_name }}
+            # add latest in tags if its release
+            ${{ startsWith(github.ref, 'refs/tags/v') && 'type=raw,value=latest,priority=901' || '' }}
+            # add version in tags if its release
+            ${{ startsWith(github.ref, 'refs/tags/v') && 'type=raw,value=${{ github.ref_name }},priority=900' || '' }}
+            # always add edge as latest builded image
+            type=edge
+            # always add short sha so user can use direct build
             type=sha
-            ${{ startsWith(github.ref, 'refs/tags/v') && 'type=raw,value=latest' || '' }}
 
       - name: Create manifest list and push gchr
         working-directory: /tmp/digests
