@@ -71,7 +71,9 @@ jobs:
           context: ./server
           file: ./server/Dockerfile
           platforms: ${{ matrix.platform }}
-          tags: ${{ steps.backend_meta.outputs.tags }}
+          tags: |
+            ${{ steps.backend_meta.outputs.tags }}
+            ghcr.io/${{ github.repository_owner }}/rybbit-backend:${{ github.ref_name }}-${{ matrix.arch }}
           labels: ${{ steps.backend_meta.outputs.labels }}
           push: true
 
@@ -87,3 +89,26 @@ jobs:
           path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
           retention-days: 1
+
+  merge-manifest:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push Docker manifest
+        run: |
+          tag=${{ github.ref_name }}
+          image=ghcr.io/${{ github.repository_owner }}/rybbit-backend
+
+          docker manifest create $image:$tag \
+            $image:${tag}-amd64 \
+            $image:${tag}-arm64
+
+          docker manifest push $image:$tag
