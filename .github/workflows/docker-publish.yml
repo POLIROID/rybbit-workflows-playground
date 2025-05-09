@@ -111,6 +111,8 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
+          images: |
+            ghcr.io/poliroid/rybbit-workflows-playground
           tags: |
             type=edge
 
