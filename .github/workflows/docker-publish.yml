@@ -80,9 +80,9 @@ jobs:
 
   merge:
 
-    name: Merge OCI Images and Push
-    needs: build-and-push
     runs-on: ubuntu-latest
+
+    name: Merge OCI Images and Push
 
     needs:
       - build
