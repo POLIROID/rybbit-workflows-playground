@@ -73,12 +73,11 @@ jobs:
           platforms: ${{ matrix.platform }}
           tags: ${{ steps.backend_meta.outputs.tags }}
           labels: ${{ steps.backend_meta.outputs.labels }}
-          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          push: true
 
       - name: Save image digests
         run: |
           mkdir -p ${{ runner.temp }}/digests
-
           echo "${{ steps.backend_build.outputs.digest }}" > "${{ runner.temp }}/digests/backend-${{ env.PLATFORM_PAIR }}.digest"
 
       - name: Upload digests
