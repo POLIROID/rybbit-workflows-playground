@@ -70,8 +70,8 @@ jobs:
           context: ./server
           file: ./server/Dockerfile
           platforms: ${{ matrix.platform }}
-          labels: ${{ steps.meta.outputs.labels }}
-          tags: ${{ env.REGISTRY_IMAGE }}
+          tags: ${{ steps.meta_backend.outputs.tags }}
+          labels: ${{ steps.meta_backend.outputs.labels }}
           outputs: type=image,push-by-digest=true,name-canonical=true,push=true
 
       - name: Extract metadata (tags, labels) for Docker - Client
@@ -90,8 +90,8 @@ jobs:
           context: ./client
           file: ./client/Dockerfile
           platforms: ${{ matrix.platform }}
-          labels: ${{ steps.meta.outputs.labels }}
-          tags: ${{ env.REGISTRY_IMAGE }}
+          tags: ${{ steps.meta_client.outputs.tags }}
+          labels: ${{ steps.meta_client.outputs.labels }}
           outputs: type=image,push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
