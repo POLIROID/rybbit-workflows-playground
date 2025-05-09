@@ -59,7 +59,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push by digest
+      - name: Build and push backend by digest
         id: build-backend
         uses: docker/build-push-action@v6
         with:
@@ -70,12 +70,25 @@ jobs:
           # Push image by digest only; manifest list will be created later
           outputs: type=image,"name=ghcr.io/poliroid/rybbit-backend",push-by-digest=true,name-canonical=true,push=true
 
-      - name: Export digest
+      - name: Build and push client by digest
+        id: build-client
+        uses: docker/build-push-action@v6
+        with:
+          context: ./client
+          file: ./client/Dockerfile
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Push image by digest only; manifest list will be created later
+          outputs: type=image,"name=ghcr.io/poliroid/rybbit-client",push-by-digest=true,name-canonical=true,push=true
+
+
+      - name: Export digests
         run: |
           mkdir -p /tmp/digests
-          digest="${{ steps.build-backend.outputs.digest }}"
-          # Save digest name for later merge
-          touch "/tmp/digests/${digest#sha256:}"
+          backend_digest="${{ steps.build-backend.outputs.digest }}"
+          client_digest="${{ steps.build-client.outputs.digest }}"
+          touch "/tmp/digests/backend-${backend_digest#sha256:}"
+          touch "/tmp/digests/client-${client_digest#sha256:}"
 
       - name: Upload digest
         uses: actions/upload-artifact@v4
@@ -118,6 +131,7 @@ jobs:
         with:
           images: |
             ghcr.io/poliroid/rybbit-backend
+            ghcr.io/poliroid/rybbit-client
           tags: |
             # Add 'latest' tag only if this is a version tag (e.g. v1.2.3)
             ${{ startsWith(github.ref, 'refs/tags/v') && 'type=raw,value=latest,priority=901' || '' }}
@@ -126,17 +140,23 @@ jobs:
             ${{ startsWith(github.ref, 'refs/tags/v') && format('type=raw,value={0},priority=900', github.ref_name) || '' }}
             
             # Always add 'edge' tag for build on latest commit indicator
-            # Always add short SHA tag for traceability
             type=edge
+            
+            # Always add short SHA tag for traceability
             type=sha
 
-      - name: Create manifest list and push gchr
+      - name: Create manifest lists and push images
         working-directory: /tmp/digests
         run: |
-          # Merge all platform-specific images into a single multi-arch image
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf 'ghcr.io/poliroid/rybbit-backend@sha256:%s ' *)
+          for component in backend client; do
+            docker buildx imagetools create \
+              $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+              $(printf 'ghcr.io/poliroid/rybbit-%s@sha256:%s ' "$component" ${component}-*)
+          done
 
-      - name: Inspect image ghcr
+      - name: Inspect images
         run: |
-          docker buildx imagetools inspect ghcr.io/poliroid/rybbit-backend:${{ steps.meta.outputs.version }}
+          for component in backend client; do
+            echo "Inspecting $component..."
+            docker buildx imagetools inspect ghcr.io/poliroid/rybbit-${component}:${{ steps.meta.outputs.version }}
+          done
