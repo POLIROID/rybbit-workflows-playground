@@ -3,9 +3,9 @@ name: Docker Publish
 on:
   push:
     branches:
-      - master
+      - master  # Trigger workflow on push to master branch
     tags:
-      - 'v*'
+      - 'v*'    # Trigger workflow on version tag push (e.g., v1.2.3)
 
 jobs:
 
@@ -15,7 +15,7 @@ jobs:
 
     permissions:
       contents: read
-      packages: write
+      packages: write  # Required to push images to GitHub Container Registry (GHCR)
 
     strategy:
       fail-fast: false
@@ -35,6 +35,7 @@ jobs:
       - name: Prepare
         run: |
           platform=${{ matrix.platform }}
+          # Save platform pair (e.g., linux-amd64) to env
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
 
       - name: Checkout repository
@@ -66,12 +67,14 @@ jobs:
           file: ./server/Dockerfile
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Push image by digest only; manifest list will be created later
           outputs: type=image,"name=ghcr.io/poliroid/rybbit-backend",push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.build-backend.outputs.digest }}"
+          # Save digest name for later merge
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload digest
@@ -89,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
 
     needs:
-      - build
+      - build  # Wait for all platforms to be built
 
     steps:
       - name: Download digests
@@ -97,7 +100,7 @@ jobs:
         with:
           path: /tmp/digests
           pattern: digests-*
-          merge-multiple: true
+          merge-multiple: true  # Merge all platform digests into one folder
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -116,21 +119,25 @@ jobs:
           images: |
             ghcr.io/poliroid/rybbit-backend
           tags: |
-            # add latest in tags if its release
+            # Add 'latest' tag only if this is a version tag (e.g. v1.2.3)
             ${{ startsWith(github.ref, 'refs/tags/v') && 'type=raw,value=latest,priority=901' || '' }}
-            # add version in tags if its release
+            
+            # Add the version tag itself (e.g. v1.2.3)
             ${{ startsWith(github.ref, 'refs/tags/v') && 'type=raw,value=${{ github.ref_name }},priority=900' || '' }}
-            # always add edge as latest builded image
+            
+            # Always add 'edge' tag for build on latest commit indicator
             type=edge
-            # always add short sha so user can use direct build
+            
+            # Always add short SHA tag for traceability
             type=sha
 
       - name: Create manifest list and push gchr
         working-directory: /tmp/digests
         run: |
+          # Merge all platform-specific images into a single multi-arch image
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf 'ghcr.io/poliroid/rybbit-backend@sha256:%s ' *)
 
       - name: Inspect image ghcr
         run: |
-          docker buildx imagetools inspect ghcr.io/poliroid/rybbit-backend:${{ steps.meta.outputs.version }}  
+          docker buildx imagetools inspect ghcr.io/poliroid/rybbit-backend:${{ steps.meta.outputs.version }}
