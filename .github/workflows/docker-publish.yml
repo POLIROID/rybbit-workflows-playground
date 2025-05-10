@@ -117,8 +117,9 @@ jobs:
       - name: Download digests and variables
         uses: actions/download-artifact@v4
         with:
+          merge-multiple: true  # Merge all platform digests into one folder
           name: digests-and-variables-*
-          path: /tmp/build/
+          path: /tmp/build
 
       - name: Load variables from artifacts
         run: |
