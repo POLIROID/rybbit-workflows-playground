@@ -41,6 +41,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Define Repository Owner in Lowercase for GHCR
+        id: repo-owner
+        run: echo "REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Set short git commit SHA
         id: appvars
         run: |
@@ -68,7 +72,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           # Push image by digest only; manifest list will be created later
-          outputs: type=image,"name=ghcr.io/poliroid/rybbit-backend",push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,"name=ghcr.io/${{ env.REPO_OWNER }}/rybbit-backend",push-by-digest=true,name-canonical=true,push=true
 
       - name: Build and push client by digest
         id: build-client
@@ -79,7 +83,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           # Push image by digest only; manifest list will be created later
-          outputs: type=image,"name=ghcr.io/poliroid/rybbit-client",push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,"name=ghcr.io/${{ env.REPO_OWNER }}/rybbit-client",push-by-digest=true,name-canonical=true,push=true
 
 
       - name: Export digests
@@ -129,8 +133,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/poliroid/rybbit-backend
-            ghcr.io/poliroid/rybbit-client
+            ghcr.io/${{ env.REPO_OWNER }}/rybbit-backend
+            ghcr.io/${{ env.REPO_OWNER }}/rybbit-client
           tags: |
             # Add 'latest' tag only if this is a version tag (e.g. v1.2.3)
             ${{ startsWith(github.ref, 'refs/tags/v') && 'type=raw,value=latest,priority=901' || '' }}
@@ -151,7 +155,7 @@ jobs:
             digests=""
             for file in ${component}-*; do
               digest=$(cat "$file")
-              digests+="ghcr.io/poliroid/rybbit-${component}@${digest} "
+              digests+="ghcr.io/${{ env.REPO_OWNER }}/rybbit-${component}@${digest} "
             done
             docker buildx imagetools create \
               $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
@@ -162,5 +166,5 @@ jobs:
         run: |
           for component in backend client; do
             echo "Inspecting $component..."
-            docker buildx imagetools inspect ghcr.io/poliroid/rybbit-${component}:${{ steps.meta.outputs.version }}
+            docker buildx imagetools inspect ghcr.io/${{ env.REPO_OWNER }}/rybbit-${component}:${{ steps.meta.outputs.version }}
           done
