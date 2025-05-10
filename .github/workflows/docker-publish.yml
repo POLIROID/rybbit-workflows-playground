@@ -153,8 +153,8 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          context: ./backend  # Path to the Dockerfile for the backend
-          file: ./backend/Dockerfile  # Dockerfile for the backend
+          context: ./server  # Path to the Dockerfile for the backend
+          file: ./server/Dockerfile  # Dockerfile for the backend
           platforms: ${{ matrix.platform }}  # Build the image for the platform specified in the matrix
           labels: ${{ steps.meta.outputs.labels }}
           # Push image by digest only; manifest list will be created later
