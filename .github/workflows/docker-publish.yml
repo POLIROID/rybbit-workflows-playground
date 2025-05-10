@@ -61,9 +61,10 @@ jobs:
           echo "COMMIT_BRANCH=$branchName" >> $GITHUB_ENV
 
           # Save variables to files for merge step
-          echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]' > /tmp/repo-owner.txt
-          echo $calculatedSha > /tmp/commit-sha.txt
-          echo $branchName > /tmp/branch-name.txt
+          mkdir -p /tmp/build/env
+          echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]' > /tmp/build/env/repo-owner.txt
+          echo $calculatedSha > /tmp/build/env/commit-sha.txt
+          echo $branchName > /tmp/build/env/branch-name.txt
 
       - name: Build and push backend by digest
         id: build-backend
@@ -90,15 +91,15 @@ jobs:
 
       - name: Export digests
         run: |
-          mkdir -p /tmp/digests
-          echo "${{ steps.build-backend.outputs.digest }}" > /tmp/digests/backend-${{ env.PLATFORM_PAIR }}
-          echo "${{ steps.build-client.outputs.digest }}" > /tmp/digests/client-${{ env.PLATFORM_PAIR }}
+          mkdir -p /tmp/build/digests
+          echo "${{ steps.build-backend.outputs.digest }}" > /tmp/build/digests/backend-${{ env.PLATFORM_PAIR }}
+          echo "${{ steps.build-client.outputs.digest }}" > /tmp/build/digests/client-${{ env.PLATFORM_PAIR }}
 
       - name: Upload digest and variables
         uses: actions/upload-artifact@v4
         with:
           name: digests-and-variables-${{ env.PLATFORM_PAIR }}
-          path: /tmp/*
+          path: /tmp/build/*
           if-no-files-found: error
           retention-days: 1
 
@@ -117,13 +118,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: digests-and-variables-*
-          path: /tmp/
+          path: /tmp/build/
 
       - name: Load variables from artifacts
         run: |
-          REPO_OWNER=$(cat /tmp/repo-owner.txt)
-          COMMIT_SHORT_SHA=$(cat /tmp/commit-sha.txt)
-          COMMIT_BRANCH=$(cat /tmp/branch-name.txt)
+          REPO_OWNER=$(cat /tmp/build/env/repo-owner.txt)
+          COMMIT_SHORT_SHA=$(cat /tmp/build/env/commit-sha.txt)
+          COMMIT_BRANCH=$(cat /tmp/build/env/branch-name.txt)
 
           echo "Loaded repository owner: $REPO_OWNER"
           echo "Loaded commit SHA: $COMMIT_SHORT_SHA"
@@ -160,7 +161,7 @@ jobs:
             type=sha
 
       - name: Create manifest lists and push images
-        working-directory: /tmp/digests
+        working-directory: /tmp/build/digests
         run: |
           for component in backend client; do
             digests=""
