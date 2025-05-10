@@ -60,12 +60,6 @@ jobs:
           echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
           echo "COMMIT_BRANCH=$branchName" >> $GITHUB_ENV
 
-          # Save variables to files for merge step
-          mkdir -p /tmp/build/env
-          echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]' > /tmp/build/env/repo-owner.txt
-          echo $calculatedSha > /tmp/build/env/commit-sha.txt
-          echo $branchName > /tmp/build/env/branch-name.txt
-
       - name: Build and push backend by digest
         id: build-backend
         uses: docker/build-push-action@v6
@@ -91,15 +85,15 @@ jobs:
 
       - name: Export digests
         run: |
-          mkdir -p /tmp/build/digests
-          echo "${{ steps.build-backend.outputs.digest }}" > /tmp/build/digests/backend-${{ env.PLATFORM_PAIR }}
-          echo "${{ steps.build-client.outputs.digest }}" > /tmp/build/digests/client-${{ env.PLATFORM_PAIR }}
+          mkdir -p /tmp/digests
+          echo "${{ steps.build-backend.outputs.digest }}" > /tmp/digests/backend-${{ env.PLATFORM_PAIR }}
+          echo "${{ steps.build-client.outputs.digest }}" > /tmp/digests/client-${{ env.PLATFORM_PAIR }}
 
-      - name: Upload digest and variables
+      - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-and-variables-${{ env.PLATFORM_PAIR }}
-          path: /tmp/build/*
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
 
@@ -114,22 +108,17 @@ jobs:
 
     steps:
 
-      - name: Download digests and variables
+      - name: Download digests
         uses: actions/download-artifact@v4
         with:
+          path: /tmp/digests
+          pattern: digests-*
           merge-multiple: true  # Merge all platform digests into one folder
-          name: digests-and-variables-*
-          path: /tmp/build
 
-      - name: Load variables from artifacts
+      - name: Prepare Environment Variables for Merge
         run: |
-          REPO_OWNER=$(cat /tmp/build/env/repo-owner.txt)
-          COMMIT_SHORT_SHA=$(cat /tmp/build/env/commit-sha.txt)
-          COMMIT_BRANCH=$(cat /tmp/build/env/branch-name.txt)
-
-          echo "Loaded repository owner: $REPO_OWNER"
-          echo "Loaded commit SHA: $COMMIT_SHORT_SHA"
-          echo "Loaded branch name: $COMMIT_BRANCH"
+          # Define repository owner in lowercase for GHCR and save to env
+          echo "REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -162,7 +151,7 @@ jobs:
             type=sha
 
       - name: Create manifest lists and push images
-        working-directory: /tmp/build/digests
+        working-directory: /tmp/digests
         run: |
           for component in backend client; do
             digests=""
