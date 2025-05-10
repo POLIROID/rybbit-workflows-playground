@@ -185,6 +185,10 @@ jobs:
       - backend  # Wait for client before running the merge job
       - client  # Wait for client before running the merge job
 
+    permissions:
+      contents: read  # Allows reading repository contents
+      packages: write  # Required to push images to GitHub Container Registry (GHCR)
+
     steps:
 
       - name: Download digests
@@ -208,8 +212,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3  # Set up Docker Buildx for multi-platform builds
-
-
 
       - name: Extract client metadata (tags, labels)
         id: client-meta
@@ -245,8 +247,6 @@ jobs:
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $digests
 
-
-
       - name: Extract backend metadata (tags, labels)
         id: backend-meta
         uses: docker/metadata-action@v5
@@ -281,8 +281,6 @@ jobs:
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $digests
 
-
-
       - name: Inspect client images
         run: |
           # Inspect the client image to verify the push
@@ -294,4 +292,3 @@ jobs:
           # Inspect the backend image to verify the push
           echo "Inspecting backend..."
           docker buildx imagetools inspect ghcr.io/${{ env.REPO_OWNER }}/rybbit-backend:${{ steps.backend-meta.outputs.version }}
-
