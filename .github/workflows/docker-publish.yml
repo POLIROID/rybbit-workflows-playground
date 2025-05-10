@@ -14,40 +14,40 @@ jobs:
     name: Build Images
 
     permissions:
-      contents: read
+      contents: read  # Allows reading repository contents
       packages: write  # Required to push images to GitHub Container Registry (GHCR)
 
     strategy:
-      fail-fast: false
+      fail-fast: false  # Continue building other platforms even if one fails
       matrix:
         include:
           - os: ubuntu-latest
             arch: amd64
-            platform: linux/amd64
+            platform: linux/amd64  # x86_64 architecture
           - os: ubuntu-24.04-arm
             arch: arm64
-            platform: linux/arm64
+            platform: linux/arm64  # ARM architecture
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}  # Use the selected OS from the matrix
 
     steps:
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4  # Checkout the code from the repository
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io  # GitHub Container Registry URL
+          username: ${{ github.repository_owner }}  # GitHub repository owner
+          password: ${{ secrets.GITHUB_TOKEN }}  # Token to authenticate with GHCR
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3  # Set up Docker Buildx for building multi-platform images
 
       - name: Prepare Environment Variables for Build
         run: |
-          # Define platform pair (e.g., linux-amd64) and save to env
+          # Define platform pair (e.g., linux-amd64) and save to environment variables
           platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
 
@@ -64,10 +64,10 @@ jobs:
         id: build-backend
         uses: docker/build-push-action@v6
         with:
-          context: ./server
-          file: ./server/Dockerfile
-          platforms: ${{ matrix.platform }}
-          labels: ${{ steps.meta.outputs.labels }}
+          context: ./server  # Path to the Dockerfile for the backend
+          file: ./server/Dockerfile  # Dockerfile for the backend
+          platforms: ${{ matrix.platform }}  # Build the image for the platform specified in the matrix
+          labels: ${{ steps.meta.outputs.labels }}  # Add labels to the image
           # Push image by digest only; manifest list will be created later
           outputs: type=image,"name=ghcr.io/${{ env.REPO_OWNER }}/rybbit-backend",push-by-digest=true,name-canonical=true,push=true
 
@@ -75,27 +75,28 @@ jobs:
         id: build-client
         uses: docker/build-push-action@v6
         with:
-          context: ./client
-          file: ./client/Dockerfile
-          platforms: ${{ matrix.platform }}
-          labels: ${{ steps.meta.outputs.labels }}
+          context: ./client  # Path to the Dockerfile for the client
+          file: ./client/Dockerfile  # Dockerfile for the client
+          platforms: ${{ matrix.platform }}  # Build the image for the platform specified in the matrix
+          labels: ${{ steps.meta.outputs.labels }}  # Add labels to the image
           # Push image by digest only; manifest list will be created later
           outputs: type=image,"name=ghcr.io/${{ env.REPO_OWNER }}/rybbit-client",push-by-digest=true,name-canonical=true,push=true
 
-
       - name: Export digests
         run: |
+          # Create a temporary directory to store digests
           mkdir -p /tmp/digests
+          # Save the digests of backend and client images
           echo "${{ steps.build-backend.outputs.digest }}" > /tmp/digests/backend-${{ env.PLATFORM_PAIR }}
           echo "${{ steps.build-client.outputs.digest }}" > /tmp/digests/client-${{ env.PLATFORM_PAIR }}
 
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ env.PLATFORM_PAIR }}
-          path: /tmp/digests/*
-          if-no-files-found: error
-          retention-days: 1
+          name: digests-${{ env.PLATFORM_PAIR }}  # Name of the artifact (unique per platform)
+          path: /tmp/digests/*  # Path to the digests files
+          if-no-files-found: error  # Fail if no files are found
+          retention-days: 1  # Retain artifacts for 1 day
 
   merge:
 
@@ -104,15 +105,15 @@ jobs:
     runs-on: ubuntu-latest
 
     needs:
-      - build  # Wait for all platforms to be built
+      - build  # Wait for all platforms to be built before running the merge job
 
     steps:
 
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
-          path: /tmp/digests
-          pattern: digests-*
+          path: /tmp/digests  # Download the digests to the /tmp/digests directory
+          pattern: digests-*  # Match all artifacts starting with 'digests-'
           merge-multiple: true  # Merge all platform digests into one folder
 
       - name: Prepare Environment Variables for Merge
@@ -123,12 +124,12 @@ jobs:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io  # GitHub Container Registry URL
+          username: ${{ github.repository_owner }}  # GitHub repository owner
+          password: ${{ secrets.GITHUB_TOKEN }}  # Token to authenticate with GHCR
           
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3  # Set up Docker Buildx for multi-platform builds
 
       - name: Extract metadata (tags, labels)
         id: meta
@@ -138,7 +139,7 @@ jobs:
             ghcr.io/${{ env.REPO_OWNER }}/rybbit-backend
             ghcr.io/${{ env.REPO_OWNER }}/rybbit-client
           tags: |
-            # Add 'latest' tag only if this is a version tag (e.g. v1.2.3)
+            # Add 'latest' tag only if this is a version tag (e.g., v1.2.3)
             ${{ startsWith(github.ref, 'refs/tags/v') && 'type=raw,value=latest,priority=901' || '' }}
             
             # Add the version tag itself (e.g. v1.2.3)
@@ -151,16 +152,19 @@ jobs:
             type=sha
 
       - name: Create manifest lists and push images
-        working-directory: /tmp/digests
+        working-directory: /tmp/digests  # Change working directory to /tmp/digests
         run: |
+          # Loop through both backend and client components to generate a manifest list
           for component in backend client; do
             digests=""
 
+            # Collect all the digests for the current component
             for file in ${component}-*; do
               digest=$(cat "$file")
               digests+="ghcr.io/${{ env.REPO_OWNER }}/rybbit-${component}@${digest} "
             done
 
+            # Create a manifest list and push to GHCR
             docker buildx imagetools create \
               $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
               $digests
@@ -168,6 +172,7 @@ jobs:
 
       - name: Inspect images
         run: |
+          # Inspect the backend and client images to verify the push
           for component in backend client; do
             echo "Inspecting $component..."
             docker buildx imagetools inspect ghcr.io/${{ env.REPO_OWNER }}/rybbit-${component}:${{ steps.meta.outputs.version }}
