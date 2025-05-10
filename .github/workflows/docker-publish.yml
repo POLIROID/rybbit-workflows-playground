@@ -87,7 +87,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ env.PLATFORM_PAIR }}  # Name of the artifact (unique per platform)
+          name: digests-client-${{ env.PLATFORM_PAIR }}  # Name of the artifact (unique per platform)
           path: /tmp/digests/*  # Path to the digests files
           if-no-files-found: error  # Fail if no files are found
           retention-days: 1  # Retain artifacts for 1 day
@@ -170,7 +170,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ env.PLATFORM_PAIR }}  # Name of the artifact (unique per platform)
+          name: digests-backend-${{ env.PLATFORM_PAIR }}  # Name of the artifact (unique per platform)
           path: /tmp/digests/*  # Path to the digests files
           if-no-files-found: error  # Fail if no files are found
           retention-days: 1  # Retain artifacts for 1 day
