@@ -32,26 +32,28 @@ jobs:
 
     steps:
 
-      - name: Prepare
+      - name: Prepare Environment Variables for Build
         run: |
+          # Define platform pair (e.g., linux-amd64) and save to env
           platform=${{ matrix.platform }}
-          # Save platform pair (e.g., linux-amd64) to env
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
+          # Define repository owner in lowercase for GHCR and save to env
+          echo "REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      - name: Define Repository Owner in Lowercase for GHCR
-        id: repo-owner
-        run: echo "REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
-      - name: Set short git commit SHA
-        id: appvars
-        run: |
+          # Set short git commit SHA and branch name, then save to env
           calculatedSha=$(git rev-parse --short HEAD)
           branchName=$(git rev-parse --abbrev-ref HEAD)
           echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
           echo "COMMIT_BRANCH=$branchName" >> $GITHUB_ENV
+
+          # Save variables to files for merge step
+          echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]' > /tmp/repo-owner.txt
+          echo $calculatedSha > /tmp/commit-sha.txt
+          echo $branchName > /tmp/branch-name.txt
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -92,11 +94,11 @@ jobs:
           echo "${{ steps.build-backend.outputs.digest }}" > /tmp/digests/backend-${{ env.PLATFORM_PAIR }}
           echo "${{ steps.build-client.outputs.digest }}" > /tmp/digests/client-${{ env.PLATFORM_PAIR }}
 
-      - name: Upload digest
+      - name: Upload digest and variables
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ env.PLATFORM_PAIR }}
-          path: /tmp/digests/*
+          name: digests-and-variables-${{ env.PLATFORM_PAIR }}
+          path: /tmp/*
           if-no-files-found: error
           retention-days: 1
 
@@ -111,12 +113,21 @@ jobs:
 
     steps:
 
-      - name: Download digests
+      - name: Download digests and variables
         uses: actions/download-artifact@v4
         with:
-          path: /tmp/digests
-          pattern: digests-*
-          merge-multiple: true  # Merge all platform digests into one folder
+          name: digests-and-variables-*
+          path: /tmp/
+
+      - name: Load variables from artifacts
+        run: |
+          REPO_OWNER=$(cat /tmp/repo-owner.txt)
+          COMMIT_SHORT_SHA=$(cat /tmp/commit-sha.txt)
+          COMMIT_BRANCH=$(cat /tmp/branch-name.txt)
+
+          echo "Loaded repository owner: $REPO_OWNER"
+          echo "Loaded commit SHA: $COMMIT_SHORT_SHA"
+          echo "Loaded branch name: $COMMIT_BRANCH"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -124,7 +135,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
+          
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -153,10 +164,12 @@ jobs:
         run: |
           for component in backend client; do
             digests=""
+
             for file in ${component}-*; do
               digest=$(cat "$file")
               digests+="ghcr.io/${{ env.REPO_OWNER }}/rybbit-${component}@${digest} "
             done
+
             docker buildx imagetools create \
               $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
               $digests
