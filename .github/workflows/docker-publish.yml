@@ -194,19 +194,21 @@ jobs:
             type=sha,priority=700
 
       - name: Push manifest client
-        working-directory: /tmp/digests # Change working directory to /tmp/digests
+        working-directory: /tmp/digests
+        env:
+          TAGS_JSON: ${{ steps.meta-client.outputs.json }}
         run: |
           digests=""
-
+      
           # Collect all the digests for the client component
           for file in client-*; do
             digest=$(cat "$file")
             digests+="ghcr.io/${{ env.REPO_OWNER }}/rybbit-client@${digest} "
           done
-
+      
           # Create a manifest list and push to GHCR
           docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.meta-client.outputs.json }}") \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$TAGS_JSON") \
             $digests
 
       - name: Metadata backend
@@ -231,19 +233,21 @@ jobs:
             type=sha,priority=700
 
       - name: Push manifest backend
-        working-directory: /tmp/digests # Change working directory to /tmp/digests
+        working-directory: /tmp/digests
+        env:
+          TAGS_JSON: ${{ steps.meta-backend.outputs.json }}
         run: |
           digests=""
-
+      
           # Collect all the digests for the backend component
           for file in backend-*; do
             digest=$(cat "$file")
             digests+="ghcr.io/${{ env.REPO_OWNER }}/rybbit-backend@${digest} "
           done
-
+      
           # Create a manifest list and push to GHCR
           docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.meta-backend.outputs.json }}") \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$TAGS_JSON") \
             $digests
 
       - name: Inspect client images
