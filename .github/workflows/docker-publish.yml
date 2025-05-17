@@ -56,7 +56,7 @@ jobs:
           file: ./client/Dockerfile # Dockerfile for the client
           platforms: ${{ matrix.platform }} # Build the image for the platform specified in the matrix
           labels: ${{ steps.meta.outputs.labels }}
-          push: false # never push here
+          outputs: type=image,"name=ghcr.io/${{ env.REPO_OWNER }}/rybbit-client",push-by-digest=true,name-canonical=true,push=false
 
       - name: Export digests
         run: |
@@ -115,7 +115,7 @@ jobs:
           file: ./server/Dockerfile # Dockerfile for the backend
           platforms: ${{ matrix.platform }} # Build the image for the platform specified in the matrix
           labels: ${{ steps.meta.outputs.labels }}
-          push: false # never push here
+          outputs: type=image,"name=ghcr.io/${{ env.REPO_OWNER }}/rybbit-backend",push-by-digest=true,name-canonical=true,push=false
 
       - name: Export digests
         run: |
