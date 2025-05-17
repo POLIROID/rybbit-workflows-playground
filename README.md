@@ -34,7 +34,7 @@ There are two ways to start using Rybbit:
 
 📚 Explore our [comprehensive documentation](https://rybbit.io/docs) to learn more about installation, configuration, and usage.
 
-<hr>
+<hr>asdad
 
 ## ✨ Key Features
 
