@@ -58,8 +58,8 @@ jobs:
           file: ./client/Dockerfile # Dockerfile for the client
           platforms: ${{ matrix.platform }} # Build the image for the platform specified in the matrix
           labels: ${{ steps.meta.outputs.labels }}
-          # Build and export the image by digest, but don't push — manifests will be pushed later
-          outputs: type=image,"name=ghcr.io/${{ env.REPO_OWNER }}/rybbit-client",push-by-digest=true,name-canonical=true,push=false
+          outputs: type=image,"name=ghcr.io/${{ env.REPO_OWNER }}/rybbit-client",push-by-digest=true,name-canonical=true
+          push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
       - name: Export digests
         run: |
@@ -120,8 +120,8 @@ jobs:
           file: ./server/Dockerfile # Dockerfile for the backend
           platforms: ${{ matrix.platform }} # Build the image for the platform specified in the matrix
           labels: ${{ steps.meta.outputs.labels }}
-          # Build and export the image by digest, but don't push — manifests will be pushed later
-          outputs: type=image,"name=ghcr.io/${{ env.REPO_OWNER }}/rybbit-backend",push-by-digest=true,name-canonical=true,push=false
+          outputs: type=image,"name=ghcr.io/${{ env.REPO_OWNER }}/rybbit-backend",push-by-digest=true,name-canonical=true
+          push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
       - name: Export digests
         run: |
