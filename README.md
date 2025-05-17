@@ -85,3 +85,5 @@ There are two ways to start using Rybbit:
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=rybbit-io/rybbit&type=Date)](https://www.star-history.com/#rybbit-io/rybbit&Date)
+
+## Something for commit
