@@ -206,7 +206,7 @@ jobs:
 
           # Create a manifest list and push to GHCR
           docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.meta-client.outputs.json }}") \
             $digests
 
       - name: Metadata backend
@@ -243,7 +243,7 @@ jobs:
 
           # Create a manifest list and push to GHCR
           docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.meta-backend.outputs.json }}") \
             $digests
 
       - name: Inspect client images
