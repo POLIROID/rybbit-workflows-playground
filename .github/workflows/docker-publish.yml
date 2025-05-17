@@ -21,10 +21,8 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            arch: amd64
             platform: linux/amd64 # x86_64 architecture
           - os: ubuntu-24.04-arm
-            arch: arm64
             platform: linux/arm64 # ARM architecture
 
     runs-on: ${{ matrix.os }} # Use the selected OS from the matrix
@@ -42,6 +40,10 @@ jobs:
           # Define repository owner in lowercase for GHCR and save to env
           echo "REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+          # Set short git commit SHA then save to env
+          calculatedSha=$(git rev-parse --short HEAD)
+          echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -56,6 +58,7 @@ jobs:
           file: ./client/Dockerfile # Dockerfile for the client
           platforms: ${{ matrix.platform }} # Build the image for the platform specified in the matrix
           labels: ${{ steps.meta.outputs.labels }}
+          # Build and export the image by digest, but don't push — manifests will be pushed later
           outputs: type=image,"name=ghcr.io/${{ env.REPO_OWNER }}/rybbit-client",push-by-digest=true,name-canonical=true,push=false
 
       - name: Export digests
@@ -80,10 +83,8 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            arch: amd64
             platform: linux/amd64 # x86_64 architecture
           - os: ubuntu-24.04-arm
-            arch: arm64
             platform: linux/arm64 # ARM architecture
 
     runs-on: ${{ matrix.os }} # Use the selected OS from the matrix
@@ -101,6 +102,10 @@ jobs:
           # Define repository owner in lowercase for GHCR and save to env
           echo "REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+          # Set short git commit SHA then save to env
+          calculatedSha=$(git rev-parse --short HEAD)
+          echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -115,6 +120,7 @@ jobs:
           file: ./server/Dockerfile # Dockerfile for the backend
           platforms: ${{ matrix.platform }} # Build the image for the platform specified in the matrix
           labels: ${{ steps.meta.outputs.labels }}
+          # Build and export the image by digest, but don't push — manifests will be pushed later
           outputs: type=image,"name=ghcr.io/${{ env.REPO_OWNER }}/rybbit-backend",push-by-digest=true,name-canonical=true,push=false
 
       - name: Export digests
