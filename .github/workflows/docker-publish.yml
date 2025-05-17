@@ -172,10 +172,6 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3 # Set up Docker Buildx for multi-platform builds
 
-
-
-
-
       - name: Metadata client
         id: meta-client
         uses: docker/metadata-action@v5
@@ -210,17 +206,8 @@ jobs:
 
           # Create a manifest list and push to GHCR
           docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.meta-client.outputs.json }}") \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $digests
-
-      - name: Inspect client images
-        run: |
-          # Inspect the client image to verify the push
-          echo "Inspecting client..."
-          docker buildx imagetools inspect ghcr.io/${{ env.REPO_OWNER }}/rybbit-client:${{ steps.meta-client.outputs.version }}
-
-
-
 
       - name: Metadata backend
         id: meta-backend
@@ -256,8 +243,14 @@ jobs:
 
           # Create a manifest list and push to GHCR
           docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.meta-backend.outputs.json }}") \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $digests
+
+      - name: Inspect client images
+        run: |
+          # Inspect the client image to verify the push
+          echo "Inspecting client..."
+          docker buildx imagetools inspect ghcr.io/${{ env.REPO_OWNER }}/rybbit-client:${{ steps.meta-client.outputs.version }}
 
       - name: Inspect backend images
         run: |
