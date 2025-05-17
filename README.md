@@ -3,7 +3,7 @@
     <h1 align="center">
         Rybbit Analytics 
     </h1>
-    <p align="center">Open Source Web & Product Analytics</p>
+    <p align="center">Open Source Web & Product Analytics.</p>
 
 <p align="center">
     <a href="https://rybbit.io" target="_blank">Website</a> |
