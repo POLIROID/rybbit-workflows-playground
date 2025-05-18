@@ -166,9 +166,7 @@ jobs:
 
     # true  → we are allowed to push images
     # false → forked PR – build only
-    if: >-
-      ${{ github.event_name != 'pull_request' ||
-          github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
     needs:
       - build-client # Wait for client before running the merge job
