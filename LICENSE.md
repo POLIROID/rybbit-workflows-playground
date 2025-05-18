@@ -46,7 +46,7 @@ provide the source code of the modified version running there to the
 users of that server. Therefore, public use of a modified version, on
 a publicly accessible server, gives the public access to the source
 code of the modified version.
-
+cxvvxcv
 An older license, called the Affero General Public License and
 published by Affero, was designed to accomplish similar goals. This is
 a different license, not a version of the Affero GPL, but Affero has
