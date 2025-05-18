@@ -34,7 +34,7 @@ There are two ways to start using Rybbit:
 | **[Self-Hosting](https://rybbit.io/docs/self-hosting)** | Deploy and manage Rybbit on your own VPS for complete control          |
 
 📚 Explore our [comprehensive documentation](https://rybbit.io/docs) to learn more about installation, configuration, and usage.
-
+dcsdvfghgbdjfng
 <hr>
 
 ## ✨ Key Features
